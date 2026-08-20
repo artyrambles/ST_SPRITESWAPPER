@@ -2,7 +2,7 @@
   "id": "ST_SPRITESWAPPER",
   "name": "Stahltier's Sprite Swapper",
   "description": "Allows you to load one (1) Sprite Pack Mod that overwrites the game's back and front sprites in battle and menus.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "entry": "DONT-TOUCH-ME-OR-ILL-SCREAM/main.lua",
   "api": 2,
   "priority": 10,

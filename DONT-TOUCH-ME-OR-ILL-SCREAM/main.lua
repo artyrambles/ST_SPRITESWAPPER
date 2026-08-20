@@ -6,6 +6,12 @@ return function(mod)
   local Stats = require("src.pokemon.Stats") -- needed for the recomp's native shiny pokemon detection
 
   local loaded_sprite_packs = {}
+  local loaded_animations = {} -- structure: {speciesId = animated file ref, ..., ...}
+  local use_animations = false -- for compatibility
+  local sprite_dimensions_w = 56 -- for compatibility
+  local sprite_dimensions_h = 56 -- for compatibility
+  local fallback_sprite_dimensions = 56
+  local default_duration = 12 -- frames for each animated cell
 
   local pack_choices = { { "NONE", "NONE" } }
 
@@ -13,7 +19,7 @@ return function(mod)
     if e.mod.id == mod.id then
       mod.save:set("chosenpack", (mod.options:get("packchoice", "NONE")))
       mod.save:set("useshinies", (mod.options:get("useshinies", false)))
-      mod.save:set("useshinies", 2)
+      mod.save:set("backspritescale", 2) -- copypaste mishap fixed in 0.0.2
     end
   end)
 
@@ -54,8 +60,7 @@ return function(mod)
     end
   end)
 
-  -- store the player's pick on the mon somehow (mod.save, a link_fields
-  -- bag field, nickname tag, …); this example reads mon.skin
+  -- change the mon's sprites when they are requested by the game's visuals
   mod.hooks:wrap("pokemon.sprite", function(next, path, ctx)
     path = next(path, ctx)
     local side = ctx.side == "back" and "back" or "front"
@@ -77,9 +82,23 @@ return function(mod)
     if current_pack ~= "NONE" then
       local lmod = mod.find(current_pack)
       if lmod then
+        if lmod.exports.animatedSprites then 
+          -- do this just in time because the player could have swapped sprite pack anytime
+          use_animations = true
+          sprite_dimensions_w = lmod.exports.spritesize_w
+          sprite_dimensions_h = lmod.exports.spritesize_h
+        else
+          -- revert to default settings
+          use_animations = false
+          sprite_dimensions_w = fallback_sprite_dimensions
+          sprite_dimensions_h = fallback_sprite_dimensions
+        end
+
+        -- actual sprite path gets deduced here
         if shinymon and lmod.exports.providesShinySprites and mod.options:get("useshinies", false) then
-          mod.log:info("pokemon is shiny.")
-          local sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/shiny/".. ctx.species .. ".png"
+          --mod.log:info("pokemon is shiny.")
+          local sprite_file = nil
+          sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/shiny/".. ctx.species .. ".png"
           local sprite_exists = helpers.imgExistsBool(sprite_file)
           ctx.trueColor = sprite_exists --and lmod.exports.trueColorSprites
           --mod.log:info("[ST_SPRITESWAPPER] Loading sprite from file: ".. sprite_file)
@@ -91,6 +110,11 @@ return function(mod)
         ctx.trueColor = sprite_exists and lmod.exports.trueColorSprites
         return sprite_exists and sprite_file or path
       end
+    else
+      -- also revert to default sprite settings
+      use_animations = false
+      sprite_dimensions_w = fallback_sprite_dimensions
+      sprite_dimensions_h = fallback_sprite_dimensions
     end
     return path
   end)
