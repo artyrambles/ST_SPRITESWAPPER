@@ -39,6 +39,18 @@ return function(mod)
     mod.content.pokemon:override(id, patched_pokemon)
   end
 
+  mod.hooks:wrap("core.update", function(next, game, dt)
+    for id, animation in pairs(loaded_animations) do
+      animation.currentTime = animation.currentTime + dt
+      if animation.currentTime >= animation.duration then
+          animation.currentTime = animation.currentTime - animation.duration
+      end
+      local spriteNum = math.floor(animation.currentTime / animation.duration * #animation.quads) + 1
+      love.graphics.draw(animation.spriteSheet, animation.quads[spriteNum], 0, 0, 0, 4)
+    end
+    return next(game, dt)
+  end)
+
   mod.events:on("mods.loaded", function(e)
     for id, rmod in pairs(e["loader"].exports) do
       mod.log:info("[ST_SPRITESWAPPER] Looking at mod: ".. id)
@@ -104,7 +116,26 @@ return function(mod)
           --mod.log:info("[ST_SPRITESWAPPER] Loading sprite from file: ".. sprite_file)
           return sprite_exists and sprite_file or path
         end
-        local sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/normal/".. ctx.species .. ".png"
+        local sprite_file = nil
+        local animation = loaded_animations[ctx.species]
+        if use_animations and animation then
+          --local spriteNum = math.floor(animation.currentTime / animation.duration * #animation.quads) + 1
+          sprite_file = animation.spriteSheet
+        elseif use_animations then 
+          -- first try creating the animation
+          local cell_path = "_0"
+          local anim_path = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/normal-animated/".. ctx.species .. cell_path .. ".png"
+          local new_anim = helpers.newAnimation(anim_path, sprite_dimensions_w, sprite_dimensions_h, default_duration)
+          if new_anim then
+            table.insert(loaded_animations, ctx.species = new_anim)
+          else
+            -- animation still couldn't be loaded, fall back to default sprite.
+            mod.log:warn("[ST_SPRITESWAPPER] No animated spritesheet found for ".. ctx.species .."! Falling back to default sprite.")
+          end
+        else
+          -- normal, static sprite
+          sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/normal/".. ctx.species .. ".png"
+        end
         local sprite_exists = helpers.imgExistsBool(sprite_file)
         --mod.log:info("[ST_SPRITESWAPPER] Loading sprite from file: ".. sprite_file)
         ctx.trueColor = sprite_exists and lmod.exports.trueColorSprites
