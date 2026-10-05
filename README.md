@@ -1,4 +1,5 @@
-# Stahltier's Sprite Swapper Mod
+<img width="678" height="92" alt="banner" src="https://github.com/user-attachments/assets/2eaf8621-e104-4ead-98e5-7e8e01a24ce9" />
+
 This mod is meant to be installed alongside any number of compatible Sprite Pack mods and lets the player choose which of the installed Sprite Pack mods to use from the mod's options menu.
 
 ## Features
