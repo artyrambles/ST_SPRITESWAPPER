@@ -110,7 +110,7 @@ return function(mod)
     local pkmn = ctx.mon
     local shinymon = false
     if pkmn then -- this can be nil if it's not a battler in the battle screen.
-      shinymon = Stats.isShiny(pkmn.dvs)
+      shinymon = Stats.isShiny(pkmn.dvs) or ctx.shiny -- added handling for gen3 shiny pokemon here (hopefully?).
     end
     -- get the mod's actual asset path
     local current_pack = mod.options:get("packchoice")
@@ -160,7 +160,7 @@ return function(mod)
     local pkmn = ctx.mon
     local shinymon = false
     if pkmn then -- this can be nil in certain situations, I guess
-      shinymon = Stats.isShiny(pkmn.dvs)
+      shinymon = Stats.isShiny(pkmn.dvs) or ctx.shiny -- added handling for gen3 shiny pokemon here (hopefully?).
     end
     -- get the mod's actual asset path
     local current_pack = mod.options:get("packchoice")
