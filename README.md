@@ -15,6 +15,8 @@ This mod is meant to be installed alongside any number of compatible Sprite Pack
 
 ## Creating Sprite Pack Mods
 An example Sprite Pack Mod can be found in the releases tab. It was made to be as easy to customize as possible, needing basically no coding knowledge. Its included guide describes exactly what changes need to be made to the included Config and manifest files in order to customize the Sprite Pack mod.
+
 Then, the sprite image files can be added by simply naming them after their species (in CAPSLOCK), as png files, going into their respective folders.
 After rezipping the customized Sprite Pack mod, it can be distributed and installed like any other mod.
+
 Check [this guide](SPRITE_PACK_GUIDE.md) for more in-depth info and notes about how to create and customize Sprite Packs. An up-to-date version of that guide is included in the example sprite pack zip.
