@@ -12,7 +12,7 @@ return function(mod)
   local sprite_dimensions_h = 56 -- for compatibility -- WIP!
   local fallback_sprite_dimensions = 56 -- WIP!
   local default_duration = 12 -- frames for each animated cell -- WIP!
-  local which_gen = 1 -- this lets the sprite swapper mod remember which gen the game that currently runs is. it gets detected in a very hack-y way during initialization.
+  local which_gen = 0 -- this lets the sprite swapper mod remember which gen the game that currently runs is. it gets detected in a very hack-y way during initialization.
   local gen_detected = false -- only trigger gen check once.
   local backscale_detected = false -- only trigger this check once.
   local backscale_cache = 1
@@ -37,17 +37,18 @@ return function(mod)
   end
 
   for id, mon in mod.content.pokemon:each() do
-    local patched_pokemon = deepCopyPokemon(id)
+    --local patched_pokemon = deepCopyPokemon(id) -- removed this in 1.1.0, since the pokemon data no longer gets copied and overriden but just patched once now. it was pointless to override anyway since changing the backsprite scale option at runtime doesn't work.
     local backscale = mod.options:get("backspritescale", 1)
     if not backscale_detected then 
       backscale_detected = true
-      if not gen_detected and patched_pokemon.levelMoves then -- alternatively could check if at any point the dex number exceeds 151 here.
+      local Version = require("src.core.GameVersion")
+      which_gen = Version.generation() -- added this new check in 1.1.0
+      if not gen_detected and (which_gen == 2 or which_gen == 3) then -- alternatively could check if at any point the dex number exceeds 151 here.
         mod.log:info("[ST_SPRITESWAPPER] running a gen2 or gen3 game, apparently!")
-        which_gen = 2 -- also could be gen3 but the difference doesn't matter here.
       elseif not gen_detected then
-        mod.log:info("[ST_SPRITESWAPPER] running a gen1 game, apparently!")
+        mod.log:warn("[ST_SPRITESWAPPER] Could not detect which generation of game this is at all. Reverting to the default gen1 behavior...godspeed!")
         which_gen = 1
-      else
+      --else
         --mod.log:info("[ST_SPRITESWAPPER] already checked for gen. it's gen" .. tostring(which_gen) .. ".")
       end
       gen_detected = true
@@ -67,8 +68,8 @@ return function(mod)
       end
     end
 
-    patched_pokemon.battleScaleBack = backscale_cache -- temporarily set all of these to 1 since we need to adjust it again after the freeze anyway
-    mod.content.pokemon:override(id, patched_pokemon)
+    --patched_pokemon.battleScaleBack = backscale_cache -- temporarily set all of these to 1 since we need to adjust it again after the freeze anyway -- removed this in 1.1.0
+    mod.content.pokemon:patch(id, {battleScaleBack = backscale_cache})
   end
 
   mod.events:on("mods.loaded", function(e)

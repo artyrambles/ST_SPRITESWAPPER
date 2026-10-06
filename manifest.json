@@ -10,5 +10,6 @@
   "dependencies": [],
   "profile": "content",
   "category": "SPRITE SWAPPER",
+  "permissions": ["engine_internals"],
   "games": ["gen1", "gen2", "gen3"]
 }
