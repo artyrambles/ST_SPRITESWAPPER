@@ -15,7 +15,7 @@ return function(mod)
   local which_gen = 0 -- this lets the sprite swapper mod remember which gen the game that currently runs is. it gets detected in a very hack-y way during initialization.
   local gen_detected = false -- only trigger gen check once.
   local backscale_detected = false -- only trigger this check once.
-  local backscale_cache = 1
+  local backscale_cache = -1
 
   local pack_choices = { { "NONE", "NONE" } }
 
@@ -23,7 +23,7 @@ return function(mod)
     if e.mod.id == mod.id then
       mod.save:set("chosenpack", (mod.options:get("packchoice", "NONE")))
       mod.save:set("useshinies", (mod.options:get("useshinies", false)))
-      mod.save:set("backspritescale", (mod.options:get("backspritescale", 1))) -- copypaste mishap fixed in 0.0.2 -- also fixed default/fallback value for this in 1.0.0 so it doesn't reset itself back to default constantly. also defaults to 1 now.
+      mod.save:set("backspritescale", (mod.options:get("backspritescale", -2))) -- copypaste mishap fixed in 0.0.2 -- also fixed default/fallback value for this in 1.0.0 so it doesn't reset itself back to default constantly. also defaults to 1 now.
     end
   end)
 
@@ -38,7 +38,7 @@ return function(mod)
 
   for id, mon in mod.content.pokemon:each() do
     --local patched_pokemon = deepCopyPokemon(id) -- removed this in 1.1.0, since the pokemon data no longer gets copied and overriden but just patched once now. it was pointless to override anyway since changing the backsprite scale option at runtime doesn't work.
-    local backscale = mod.options:get("backspritescale", 1)
+    local backscale = mod.options:get("backspritescale", -2)
     if not backscale_detected then 
       backscale_detected = true
       local Version = require("src.core.GameVersion")
@@ -89,7 +89,7 @@ return function(mod)
         { key = "packchoice", label = "SPRITE PACK", type = "choice", default = "NONE",
           choices = pack_choices },
         {key = "useshinies", label = "SHINY GEN1 PKMN?", type = "toggle", default = true},
-        {key = "backspritescale", label = "(RESTART) BACKSPR.SCALE", type = "choice", default = 1, -- changed to a choice type setting, and changed to default to 1 since I assume a lot of people will use this for gen2/3 rather than 1
+        {key = "backspritescale", label = "(RESTART) BACKSPR.SCALE", type = "choice", default = -2, -- changed to a choice type setting, and changed to default to 1 since I assume a lot of people will use this for gen2/3 rather than 1 -- actually nevermind, changed it to "gen1 2x"
           choices = {{"1x", 1}, {"2x", 2}, {"gen1 2x", -2}, {"half", 0.5}}} -- "gen1 2x" and "half" option added in v1.0.0. removed 4x option since i can't imagine a single usecase for it.
           -- "gen1 2x": scale ONLY gen1 sprites to 2x (as is default for gen1) and all other to 1x
       })
