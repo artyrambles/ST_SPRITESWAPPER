@@ -1,4 +1,4 @@
-<img width="678" height="92" alt="banner" src="https://github.com/user-attachments/assets/2eaf8621-e104-4ead-98e5-7e8e01a24ce9" />
+<img width="57" height="56" alt="BULBASAUR" src="https://github.com/user-attachments/assets/408da02e-bfa9-44af-a0c6-37135d092c69" /><img width="57" height="56" alt="CHARMANDER" src="https://github.com/user-attachments/assets/b955be03-d300-4701-9e13-bca2753f2f17" /><img width="57" height="56" alt="SQUIRTLE" src="https://github.com/user-attachments/assets/3816604a-8d34-460b-9be3-bb86cf9316c1" /> **STAHL'S SPRITE SWAPPER MOD** <img width="56" height="56" alt="BULBASAUR" src="https://github.com/user-attachments/assets/efe6b083-9225-43c9-b7e7-f6a2f46a53b4" /><img width="56" height="56" alt="CHARMANDER" src="https://github.com/user-attachments/assets/bd39b000-842a-47c5-947a-d11b79d488b5" /><img width="56" height="56" alt="SQUIRTLE" src="https://github.com/user-attachments/assets/8ea6d0fe-a2f8-42c6-9d81-c9205291f186" />
 
 This mod is meant to be installed alongside any number of compatible Sprite Pack mods and lets the player choose which of the installed Sprite Pack mods to use from the mod's options menu.
 
