@@ -2,7 +2,7 @@
   "id": "ST_SPRITESWAPPER",
   "name": "Stahl's Sprite Swapper",
   "description": "Allows you to load Sprite Pack Mods that overwrite the game's back and front sprites in battle and menus.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entry": "DONT-TOUCH-ME-OR-ILL-SCREAM/main.lua",
   "api": 2,
   "priority": 10,
