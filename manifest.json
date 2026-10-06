@@ -11,5 +11,6 @@
   "profile": "content",
   "category": "SPRITE SWAPPER",
   "permissions": ["engine_internals"],
-  "games": ["gen1", "gen2", "gen3"]
+  "games": ["gen1", "gen2", "gen3"],
+  "github": "artyrambles/ST_SPRITESWAPPER"
 }
