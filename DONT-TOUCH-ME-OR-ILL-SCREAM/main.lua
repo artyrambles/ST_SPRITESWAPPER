@@ -44,9 +44,9 @@ return function(mod)
       local Version = require("src.core.GameVersion")
       which_gen = Version.generation() -- added this new check in 1.1.0
       if not gen_detected and (which_gen == 2 or which_gen == 3) then -- alternatively could check if at any point the dex number exceeds 151 here.
-        mod.log:info("[ST_SPRITESWAPPER] running a gen2 or gen3 game, apparently!")
+        mod.log:info("Running a gen2 or gen3 game, apparently!")
       elseif not gen_detected then
-        mod.log:warn("[ST_SPRITESWAPPER] Could not detect which generation of game this is at all. Reverting to the default gen1 behavior...godspeed!")
+        mod.log:warn("Could not detect which generation of game this is at all. Reverting to the default gen1 behavior...godspeed!")
         which_gen = 1
       --else
         --mod.log:info("[ST_SPRITESWAPPER] already checked for gen. it's gen" .. tostring(which_gen) .. ".")
@@ -74,7 +74,7 @@ return function(mod)
 
   mod.events:on("mods.loaded", function(e)
     for id, rmod in pairs(e["loader"].exports) do
-      mod.log:info("[ST_SPRITESWAPPER] Looking at mod: ".. id)
+      mod.log:info("Looking at mod: ".. id)
       local lmod = mod.find(id)
       -- fallback for backwards compatibility with older sprite packs that don't have the true color shiny sprites setting. added in 1.0.0
       if not lmod.exports.trueColorShinySprites then lmod.exports.trueColorShinySprites = lmod.exports.trueColorSprites end
@@ -82,7 +82,7 @@ return function(mod)
       if exp.isSpritePack then
         table.insert(loaded_sprite_packs, {mod_id = id, mod_version = lmod.version, mod_exports = exp})
         table.insert(pack_choices, {exp.packLabel, id})
-        mod.log:info("[ST_SPRITESWAPPER] ".. id .. " was added to mod options.")
+        mod.log:info(id .. " was added to mod options.")
       end
       -- only now build the mod options menu from the available packs
       mod.options:define({
@@ -98,20 +98,39 @@ return function(mod)
 
   -- change the mon's sprites when they are requested by the game's visuals
   mod.hooks:wrap("pokemon.sprite", function(next, path, ctx)
+    --mod.log:info("Starting pokemon.sprite wrapped function!")
+    --mod.log:info(tostring(ctx))
+    --mod.log:info(helpers.tprint(ctx.data))
     path = next(path, ctx)
+    --mod.log:info("path = ".. tostring(path))
     local side = ctx.side == "back" and "back" or "front"
-    -- for k, v in pairs(ctx) do
-    --   if k == "montable" then
-    --     mod.log:info(k .. tostring(table.concat(v, ", ")))
-    --   else
-    --     mod.log:info(k .. tostring(v))
-    --   end
-    -- end
     --local pkmn = mod.content.pokemon:get(ctx.species)
     local pkmn = ctx.mon
     local shinymon = false
     if pkmn then -- this can be nil if it's not a battler in the battle screen.
-      shinymon = Stats.isShiny(pkmn.dvs) or ctx.shiny -- added handling for gen3 shiny pokemon here (hopefully?).
+     -- local shinymon_gen3 = false -- gen3 handles shiny pokemon differently than gen2 apparently? so here comes v1.1.1 fixing the shiny check for gen3...
+      --mod.log:info("............gen".. tostring(which_gen))
+      -- if which_gen >= 3 then
+      --   shinymon_gen3 = helpers.isShiny(pkmn)
+      --   if shinymon_gen3 then 
+      --     mod.log:info("pkmn is shiny!")
+      --   else
+      --     mod.log:info("pokemon isn't shiny or shiny data isn't available!")
+      --   end
+      -- --else
+      -- --  mod.log:info("pokemon isn't shiny or shiny data isn't available!")
+      -- end
+      shinymon = Stats.isShiny(pkmn.dvs) or helpers.isShiny(pkmn) -- added handling for gen3 shiny pokemon here (hopefully?).
+    else
+      mod.log:info("There was no mon data provided by the wrapper for pokemon.sprite! Falling back to the gen3 workaround...")
+      -- for k, v in pairs(ctx) do
+      --   if k == "data" then
+      --     mod.log:info(k .. tostring(table.concat(v, ", ")))
+      --   else
+      --     mod.log:info(k .. tostring(v))
+      --   end
+      -- end
+      shinymon = ctx.shiny and true or false
     end
     -- get the mod's actual asset path
     local current_pack = mod.options:get("packchoice")
@@ -131,7 +150,7 @@ return function(mod)
         end
         -- actual sprite path gets deduced here
         if shinymon and lmod.exports.providesShinySprites and mod.options:get("useshinies", false) then
-          --mod.log:info("pokemon is shiny.")
+          mod.log:info("pokemon is shiny.")
           local sprite_file = nil
           sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/shiny/".. ctx.species .. ".png"
           local sprite_exists = helpers.imgExistsBool(sprite_file)
@@ -159,9 +178,18 @@ return function(mod)
     --mod.log:info("pokemon.icon hook has fired.")
     path = next(path, ctx)
     local pkmn = ctx.mon
-    local shinymon = false
+    local shinymon = ctx.shiny and true or false -- handles the shiny status if it came from the hook already, otherwise will check its DVs (changed in 1.2.0)
     if pkmn then -- this can be nil in certain situations, I guess
-      shinymon = Stats.isShiny(pkmn.dvs) or ctx.shiny -- added handling for gen3 shiny pokemon here (hopefully?).
+      -- local shinymon_gen3 = false -- gen3 handles shiny pokemon differently than gen2 apparently? so here comes v1.1.1 fixing the shiny check for gen3...
+      -- if which_gen >= 3 then
+      --   shinymon_gen3 = helpers.isShiny(pkmn)
+      --   -- if shinymon_gen3 then 
+      --   --   --mod.log:info("pkmn is shiny!")
+      --   -- else
+      --   --   --mod.log:info("pokemon isn't shiny or shiny data isn't available!")
+      --   -- end
+      -- end -- commented out all of this for 1.2.0 because ctx.mon isn't provided by the gen3 hook to begin with. so this code was never reached in the first place.
+      shinymon = Stats.isShiny(pkmn.dvs)-- or shinymon_gen3 -- added handling for gen3 shiny pokemon here (hopefully?). -- note for 1.2.0: removed this code again for reasons stated above
     end
     -- get the mod's actual asset path
     local current_pack = mod.options:get("packchoice")
