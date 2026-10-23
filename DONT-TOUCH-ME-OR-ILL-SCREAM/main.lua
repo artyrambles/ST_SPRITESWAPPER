@@ -38,6 +38,7 @@ return function(mod)
 
   for id, mon in mod.content.pokemon:each() do
     --local patched_pokemon = deepCopyPokemon(id) -- removed this in 1.1.0, since the pokemon data no longer gets copied and overriden but just patched once now. it was pointless to override anyway since changing the backsprite scale option at runtime doesn't work.
+    --mod.log:info(tostring(id))
     local backscale = mod.options:get("backspritescale", -2)
     if not backscale_detected then 
       backscale_detected = true
@@ -99,12 +100,16 @@ return function(mod)
   -- change the mon's sprites when they are requested by the game's visuals
   mod.hooks:wrap("pokemon.sprite", function(next, path, ctx)
     --mod.log:info("Starting pokemon.sprite wrapped function!")
-    --mod.log:info(tostring(ctx))
-    --mod.log:info(helpers.tprint(ctx.data))
+    --mod.log:info(tostring(ctx.species))
     path = next(path, ctx)
     --mod.log:info("path = ".. tostring(path))
     local side = ctx.side == "back" and "back" or "front"
-    --local pkmn = mod.content.pokemon:get(ctx.species)
+    -- if (ctx.species ~= "UNOWN") then
+    --   local pkmndata = mod.content.pokemon:get(ctx.species)
+    --   mod.log:info(helpers.tprint(pkmndata))
+    -- else
+    --   mod.log:info(ctx.species)
+    -- end -- investigating an unown bug, will look into this more later
     local pkmn = ctx.mon
     local shinymon = false
     if pkmn then -- this can be nil if it's not a battler in the battle screen.
@@ -120,7 +125,7 @@ return function(mod)
       -- --else
       -- --  mod.log:info("pokemon isn't shiny or shiny data isn't available!")
       -- end
-      shinymon = Stats.isShiny(pkmn.dvs) or helpers.isShiny(pkmn) -- added handling for gen3 shiny pokemon here (hopefully?).
+      shinymon = Stats.isShiny(pkmn.dvs) or helpers.isShiny(pkmn) or ctx.shiny -- added handling for gen3 shiny pokemon here (hopefully?).
     else
       mod.log:info("There was no mon data provided by the wrapper for pokemon.sprite! Falling back to the gen3 workaround...")
       -- for k, v in pairs(ctx) do
@@ -174,47 +179,51 @@ return function(mod)
   end)
 
   -- new in 1.0.0: also replace the menu/party icons
-  mod.hooks:wrap("pokemon.icon", function(next, path, ctx)
-    --mod.log:info("pokemon.icon hook has fired.")
-    path = next(path, ctx)
-    local pkmn = ctx.mon
-    local shinymon = ctx.shiny and true or false -- handles the shiny status if it came from the hook already, otherwise will check its DVs (changed in 1.2.0)
-    if pkmn then -- this can be nil in certain situations, I guess
-      -- local shinymon_gen3 = false -- gen3 handles shiny pokemon differently than gen2 apparently? so here comes v1.1.1 fixing the shiny check for gen3...
-      -- if which_gen >= 3 then
-      --   shinymon_gen3 = helpers.isShiny(pkmn)
-      --   -- if shinymon_gen3 then 
-      --   --   --mod.log:info("pkmn is shiny!")
-      --   -- else
-      --   --   --mod.log:info("pokemon isn't shiny or shiny data isn't available!")
-      --   -- end
-      -- end -- commented out all of this for 1.2.0 because ctx.mon isn't provided by the gen3 hook to begin with. so this code was never reached in the first place.
-      shinymon = Stats.isShiny(pkmn.dvs)-- or shinymon_gen3 -- added handling for gen3 shiny pokemon here (hopefully?). -- note for 1.2.0: removed this code again for reasons stated above
-    end
-    -- get the mod's actual asset path
-    local current_pack = mod.options:get("packchoice")
-    if current_pack ~= "NONE" then
-      local lmod = mod.find(current_pack)
-      if lmod then
-        -- actual sprite path gets deduced here
-        if shinymon and lmod.exports.providesShinySprites and mod.options:get("useshinies", false) then
-          --mod.log:info("pokemon is shiny.")
-          local sprite_file = nil
-          sprite_file = lmod.exports.modPath .. "/assets/pokemon/icons/shiny/".. ctx.species .. ".png"
+  local Version = require("src.core.GameVersion")
+  which_gen = Version.generation()
+  if which_gen >= 0 then -- this has to be done until UNOWN stops the game from totally crashing if its icon is wrapped in gen3
+    mod.hooks:wrap("pokemon.icon", function(next, path, ctx)
+      mod.log:info("pokemon.icon hook has fired.")
+      path = next(path, ctx)
+      local pkmn = ctx.mon
+      local shinymon = ctx.shiny and true or false -- handles the shiny status if it came from the hook already, otherwise will check its DVs (changed in 1.2.0)
+      if pkmn then -- this can be nil in certain situations, I guess
+        -- local shinymon_gen3 = false -- gen3 handles shiny pokemon differently than gen2 apparently? so here comes v1.1.1 fixing the shiny check for gen3...
+        -- if which_gen >= 3 then
+        --   shinymon_gen3 = helpers.isShiny(pkmn)
+        --   -- if shinymon_gen3 then 
+        --   --   --mod.log:info("pkmn is shiny!")
+        --   -- else
+        --   --   --mod.log:info("pokemon isn't shiny or shiny data isn't available!")
+        --   -- end
+        -- end -- commented out all of this for 1.2.0 because ctx.mon isn't provided by the gen3 hook to begin with. so this code was never reached in the first place.
+        shinymon = Stats.isShiny(pkmn.dvs)-- or shinymon_gen3 -- added handling for gen3 shiny pokemon here (hopefully?). -- note for 1.2.0: removed this code again for reasons stated above
+      end
+      -- get the mod's actual asset path
+      local current_pack = mod.options:get("packchoice")
+      if current_pack ~= "NONE" then
+        local lmod = mod.find(current_pack)
+        if lmod then
+          -- actual sprite path gets deduced here
+          if shinymon and lmod.exports.providesShinySprites and mod.options:get("useshinies", false) then
+            --mod.log:info("pokemon is shiny.")
+            local sprite_file = nil
+            sprite_file = lmod.exports.modPath .. "/assets/pokemon/icons/shiny/".. ctx.species .. ".png"
+            local sprite_exists = helpers.imgExistsBool(sprite_file)
+            ctx.trueColor = sprite_exists and lmod.exports.trueColorShinySprites
+            --mod.log:info("[ST_SPRITESWAPPER] Loading icon from file: ".. sprite_file)
+            return sprite_exists and sprite_file or path
+          end
+          local sprite_file = lmod.exports.modPath .. "/assets/pokemon/icons/normal/".. ctx.species .. ".png"
           local sprite_exists = helpers.imgExistsBool(sprite_file)
-          ctx.trueColor = sprite_exists and lmod.exports.trueColorShinySprites
           --mod.log:info("[ST_SPRITESWAPPER] Loading icon from file: ".. sprite_file)
+          ctx.trueColor = sprite_exists and lmod.exports.trueColorSprites
           return sprite_exists and sprite_file or path
         end
-        local sprite_file = lmod.exports.modPath .. "/assets/pokemon/icons/normal/".. ctx.species .. ".png"
-        local sprite_exists = helpers.imgExistsBool(sprite_file)
-        --mod.log:info("[ST_SPRITESWAPPER] Loading icon from file: ".. sprite_file)
-        ctx.trueColor = sprite_exists and lmod.exports.trueColorSprites
-        return sprite_exists and sprite_file or path
       end
-    end
-    return path
-  end)
+      return path
+    end)
+  end
 
   -- for reference, this would be the way to replace a overworld walk sprite
   --mod.content.sprites:register("SPRITE_HERO", { image = swap_file, frames = 6 })
