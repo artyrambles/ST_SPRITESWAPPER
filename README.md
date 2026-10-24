@@ -11,7 +11,7 @@ This mod is meant to be installed alongside any number of compatible Sprite Pack
 - DV-based shinies are supported for gen1 (if provided by the Sprite Pack), with a mod options toggle to disable them if that is not wanted.
 - Sprite-swapping DV- and IV-based shinies is supported for gen2 and gen3.
 - Custom species added through mods are supported, though it is experimental
-- New in 1.2.0: individual sprites for Unown and Castform are now supported. Each letter/form can have its own normal and shiny sprites.
+- New in 1.3.0: individual sprites for Unown and Castform are now supported. Each letter/form can have its own normal and shiny sprites.
 - If a sprite isn't provided by the Sprite Pack mod, the normal ("vanilla") sprite will be used for that Pokemon.
 - Players can rescale backsprites with a handy mod setting that can rescale all of them or leave gen1 alone, which solves the problem of backsprites having different scales across gens.
 
