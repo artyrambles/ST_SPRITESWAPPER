@@ -6,16 +6,28 @@ return function(mod)
   local Stats = require("src.pokemon.Stats") -- needed for the recomp's native shiny pokemon detection
 
   local loaded_sprite_packs = {}
-  local loaded_animations = {} -- structure: {speciesId = animated file ref, ..., ...} -- WIP!!
+  local loaded_animations = {} -- structure: {speciesId = {animated file ref, loop?}, ..., ...} -- WIP!!
   local use_animations = false -- for compatibility -- WIP!
   local sprite_dimensions_w = 56 -- for compatibility -- WIP!
   local sprite_dimensions_h = 56 -- for compatibility -- WIP!
   local fallback_sprite_dimensions = 56 -- WIP!
+  local anim_frame_back = 0 -- for animations, WIP!
+  local anim_frame_front = 0 -- for animations, WIP!
+  local anim_loop_back = false
+  local anim_loop_front = false
   local default_duration = 12 -- frames for each animated cell -- WIP!
   local which_gen = 0 -- this lets the sprite swapper mod remember which gen the game that currently runs is. it gets detected in a very hack-y way during initialization.
   local gen_detected = false -- only trigger gen check once.
   local backscale_detected = false -- only trigger this check once.
   local backscale_cache = -1
+
+  local unown_letters = {
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",  
+    "!", "?"
+  }
+  local castform_forms = {
+    "SUN", "RAIN", "HAIL" -- doesn't have a form for sandstorm, apparently. TIL lol
+  }
 
   local pack_choices = { { "NONE", "NONE" } }
 
@@ -69,8 +81,10 @@ return function(mod)
       end
     end
 
+    if which_gen <= 1 then -- in gen3 and gen2 the battleScaleBack seems to cause a crash under api v3, so don't apply the patch there for now
     --patched_pokemon.battleScaleBack = backscale_cache -- temporarily set all of these to 1 since we need to adjust it again after the freeze anyway -- removed this in 1.1.0
-    mod.content.pokemon:patch(id, {battleScaleBack = backscale_cache})
+      mod.content.pokemon:patch(id, {battleScaleBack = backscale_cache})
+    end
   end
 
   mod.events:on("mods.loaded", function(e)
@@ -100,34 +114,14 @@ return function(mod)
   -- change the mon's sprites when they are requested by the game's visuals
   mod.hooks:wrap("pokemon.sprite", function(next, path, ctx)
     --mod.log:info("Starting pokemon.sprite wrapped function!")
-    --mod.log:info(tostring(ctx.species))
     path = next(path, ctx)
-    --mod.log:info("path = ".. tostring(path))
     local side = ctx.side == "back" and "back" or "front"
-    -- if (ctx.species ~= "UNOWN") then
+    --if tostring(ctx.species) == "CASTFORM" then -- was testing stuff here
+    --  mod.log:info(tostring(ctx.letter))
     --   local pkmndata = mod.content.pokemon:get(ctx.species)
     --   mod.log:info(helpers.tprint(pkmndata))
     -- else
     --   mod.log:info(ctx.species)
-    -- end -- investigating an unown bug, will look into this more later
-    local pkmn = ctx.mon
-    local shinymon = false
-    if pkmn then -- this can be nil if it's not a battler in the battle screen.
-     -- local shinymon_gen3 = false -- gen3 handles shiny pokemon differently than gen2 apparently? so here comes v1.1.1 fixing the shiny check for gen3...
-      --mod.log:info("............gen".. tostring(which_gen))
-      -- if which_gen >= 3 then
-      --   shinymon_gen3 = helpers.isShiny(pkmn)
-      --   if shinymon_gen3 then 
-      --     mod.log:info("pkmn is shiny!")
-      --   else
-      --     mod.log:info("pokemon isn't shiny or shiny data isn't available!")
-      --   end
-      -- --else
-      -- --  mod.log:info("pokemon isn't shiny or shiny data isn't available!")
-      -- end
-      shinymon = Stats.isShiny(pkmn.dvs) or helpers.isShiny(pkmn) or ctx.shiny -- added handling for gen3 shiny pokemon here (hopefully?).
-    else
-      mod.log:info("There was no mon data provided by the wrapper for pokemon.sprite! Falling back to the gen3 workaround...")
       -- for k, v in pairs(ctx) do
       --   if k == "data" then
       --     mod.log:info(k .. tostring(table.concat(v, ", ")))
@@ -135,11 +129,27 @@ return function(mod)
       --     mod.log:info(k .. tostring(v))
       --   end
       -- end
-      shinymon = ctx.shiny and true or false
+    --end
+    local pkmn = ctx.mon
+    local shinymon = false
+    if pkmn and which_gen < 2 then -- this can be nil if it's not a battler in the battle screen.
+      shinymon = Stats.isShiny(pkmn.dvs) -- updated to handle gen1 as a special case
+    else
+      shinymon = ctx.shiny and true or false -- note to self: this now also covers gen2 shinies
     end
     -- get the mod's actual asset path
     local current_pack = mod.options:get("packchoice")
     if current_pack ~= "NONE" then
+      local uletter = ""
+      if tostring(ctx.species) == "UNOWN" then
+        uletter = "_" .. unown_letters[ctx.letter]
+      end
+      local cform = ""
+      if tostring(ctx.species) == "CASTFORM" then
+        if tostring(ctx.form) ~= "0" then
+          cform = "_" .. castform_forms[ctx.form]
+        end
+      end
       local lmod = mod.find(current_pack)
       if lmod then
         if lmod.exports.animatedSprites then 
@@ -155,19 +165,20 @@ return function(mod)
         end
         -- actual sprite path gets deduced here
         if shinymon and lmod.exports.providesShinySprites and mod.options:get("useshinies", false) then
-          mod.log:info("pokemon is shiny.")
+          --mod.log:info("pokemon is shiny.")
           local sprite_file = nil
-          sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/shiny/".. ctx.species .. ".png"
+          sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/shiny/".. ctx.species .. uletter .. cform .. ".png"
           local sprite_exists = helpers.imgExistsBool(sprite_file)
           ctx.trueColor = sprite_exists and lmod.exports.trueColorShinySprites
-          --mod.log:info("[ST_SPRITESWAPPER] Loading sprite from file: ".. sprite_file)
+          mod.log:info("[ST_SPRITESWAPPER] Loading sprite from file: ".. sprite_file)
+          return sprite_exists and sprite_file or path
+        else
+          local sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/normal/".. ctx.species .. uletter .. cform .. ".png"
+          local sprite_exists = helpers.imgExistsBool(sprite_file)
+          mod.log:info("[ST_SPRITESWAPPER] Loading sprite from file: ".. sprite_file)
+          ctx.trueColor = sprite_exists and lmod.exports.trueColorSprites
           return sprite_exists and sprite_file or path
         end
-        local sprite_file = lmod.exports.modPath .. "/assets/pokemon/".. side .. "/normal/".. ctx.species .. ".png"
-        local sprite_exists = helpers.imgExistsBool(sprite_file)
-        --mod.log:info("[ST_SPRITESWAPPER] Loading sprite from file: ".. sprite_file)
-        ctx.trueColor = sprite_exists and lmod.exports.trueColorSprites
-        return sprite_exists and sprite_file or path
       end
     else
       -- also revert to default sprite settings
@@ -181,7 +192,7 @@ return function(mod)
   -- new in 1.0.0: also replace the menu/party icons
   local Version = require("src.core.GameVersion")
   which_gen = Version.generation()
-  if which_gen >= 0 then -- this has to be done until UNOWN stops the game from totally crashing if its icon is wrapped in gen3
+  if which_gen >= 0 then -- no longer necessary since it won't crash the game in gen3 anymore in api v3, remove check in next version
     mod.hooks:wrap("pokemon.icon", function(next, path, ctx)
       mod.log:info("pokemon.icon hook has fired.")
       path = next(path, ctx)
@@ -225,6 +236,16 @@ return function(mod)
     end)
   end
 
+  -- drafting up stuff for next version of the mod
   -- for reference, this would be the way to replace a overworld walk sprite
-  --mod.content.sprites:register("SPRITE_HERO", { image = swap_file, frames = 6 })
+  -- local swap_file = mod.path .. "/assets/trainer/" .. "kris.png"
+  -- mod.content.sprites:patch("SPRITE_RED", { image = swap_file, frames = 6 })
+
+  -- mod.hooks:wrap("player.sprite", function(next, path, ctx)
+  --   path = next(path, ctx)
+  --   if ctx.demo then return path end          -- leave the old man alone
+  --   local outfit = mod.save:get("outfit")
+  --   if not outfit then return path end
+  --   return mod.assets:path(("art/%s_%s.png"):format(outfit, ctx.side))
+  -- end)
 end

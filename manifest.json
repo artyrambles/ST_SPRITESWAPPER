@@ -4,7 +4,7 @@
   "description": "Allows you to load Sprite Pack Mods that overwrite the game's back and front sprites (and icons) in battle and menus.",
   "version": "1.2.0",
   "entry": "DONT-TOUCH-ME-OR-ILL-SCREAM/main.lua",
-  "api": 2,
+  "api": 3,
   "priority": 10,
   "experimental": false,
   "dependencies": [],
