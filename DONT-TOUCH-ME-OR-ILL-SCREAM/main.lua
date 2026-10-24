@@ -116,20 +116,20 @@ return function(mod)
     --mod.log:info("Starting pokemon.sprite wrapped function!")
     path = next(path, ctx)
     local side = ctx.side == "back" and "back" or "front"
-    --if tostring(ctx.species) == "CASTFORM" then -- was testing stuff here
-    --  mod.log:info(tostring(ctx.letter))
-    --   local pkmndata = mod.content.pokemon:get(ctx.species)
-    --   mod.log:info(helpers.tprint(pkmndata))
-    -- else
-    --   mod.log:info(ctx.species)
-      -- for k, v in pairs(ctx) do
-      --   if k == "data" then
-      --     mod.log:info(k .. tostring(table.concat(v, ", ")))
-      --   else
-      --     mod.log:info(k .. tostring(v))
-      --   end
-      -- end
-    --end
+    if tostring(ctx.species) == "GYARADOS" then -- was testing stuff here
+     mod.log:info(tostring(ctx.shiny))
+      --local pkmndata = mod.content.pokemon:get(ctx.species)
+      --mod.log:info(helpers.tprint(pkmndata))
+    for k, v in pairs(ctx) do
+      if k == "data" then
+        mod.log:info(k .. tostring(table.concat(v, ", ")))
+      else
+        mod.log:info(k .. tostring(v))
+      end
+    end
+    --else
+      --mod.log:info(ctx.species)
+    end
     local pkmn = ctx.mon
     local shinymon = false
     if pkmn and which_gen < 2 then -- this can be nil if it's not a battler in the battle screen.
